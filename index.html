@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💸Expense Splitter App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f5ff;
+      color: #333;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #6a0dad;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      width: 100%;
+    }
+    button {
+      background: #6a0dad;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #5a0099;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #f3e8ff;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💸 Expense Splitter</h1>
+
+  <div class="card">
+    <h3>Add Friend</h3>
+    <input type="text" id="friendName" placeholder="Enter friend name" />
+    <button onclick="addFriend()">Add Friend</button>
+    <ul id="friendsList"></ul>
+  </div>
+
+  <div class="card">
+    <h3>Add Expense</h3>
+    <input type="number" id="amount" placeholder="Amount (₹)" />
+    <select id="payer"></select>
+    <button onclick="addExpense()">Add Expense</button>
+    <ul id="expensesList"></ul>
+  </div>
+
+  <div class="card">
+    <h3>Settlement</h3>
+    <button onclick="calculateSettlement()">Calculate</button>
+    <ul id="settlementList"></ul>
+    <button onclick="shareResults()">📤 Share</button>
+  </div>
+
+  <script>
+    const friends = [];
+    const expenses = [];
+
+    function addFriend() {
+      const name = document.getElementById('friendName').value.trim();
+      if (name && !friends.includes(name)) {
+        friends.push(name);
+        updateFriendsList();
+        updatePayerOptions();
+        document.getElementById('friendName').value = '';
+      }
+    }
+
+    function updateFriendsList() {
+      const list = document.getElementById('friendsList');
+      list.innerHTML = '';
+      friends.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f;
+        list.appendChild(li);
+      });
+    }
+
+    function updatePayerOptions() {
+      const payerSelect = document.getElementById('payer');
+      payerSelect.innerHTML = '';
+      friends.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f;
+        option.textContent = f;
+        payerSelect.appendChild(option);
+      });
+    }
+
+    function addExpense() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const payer = document.getElementById('payer').value;
+      if (!isNaN(amount) && payer) {
+        expenses.push({ payer, amount });
+        updateExpensesList();
+        document.getElementById('amount').value = '';
+      }
+    }
+
+    function updateExpensesList() {
+      const list = document.getElementById('expensesList');
+      list.innerHTML = '';
+      expenses.forEach((ex, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${ex.payer} paid ₹${ex.amount}`;
+        list.appendChild(li);
+      });
+    }
+
+    function calculateSettlement() {
+      if (friends.length === 0 || expenses.length === 0) return;
+
+      const balance = {};
+      friends.forEach(f => balance[f] = 0);
+
+      // Distribute expenses equally
+      expenses.forEach(ex => {
+        const share = ex.amount / friends.length;
+        friends.forEach(f => {
+          if (f === ex.payer) {
+            balance[f] += ex.amount - share;
+          } else {
+            balance[f] -= share;
+          }
+        });
+      });
+
+      // Prepare settlement results
+      const settlementList = document.getElementById('settlementList');
+      settlementList.innerHTML = '';
+      const results = [];
+
+      friends.forEach(f => {
+        if (balance[f] > 0) {
+          results.push(`${f} should receive ₹${balance[f].toFixed(2)}`);
+        } else if (balance[f] < 0) {
+          results.push(`${f} should pay ₹${Math.abs(balance[f]).toFixed(2)}`);
+        } else {
+          results.push(`${f} is settled`);
+        }
+      });
+
+      results.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = r;
+        settlementList.appendChild(li);
+      });
+    }
+
+    function shareResults() {
+  const listItems = document.querySelectorAll('#settlementList li');
+  if (listItems.length === 0) {
+    alert("No results to share yet!");
+    return;
+  }
+
+  let text = '💸 Expense Settlement Results:\n';
+  listItems.forEach(li => {
+    text += `- ${li.textContent}\n`;
+  });
+
+  // Modern clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Results copied! Paste it in WhatsApp or anywhere ✨');
+    }).catch(err => {
+      alert("Failed to copy. Please try again.");
+    });
+  } else {
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed"; // avoid scrolling
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      alert('Results copied! Paste it in WhatsApp or anywhere ✨');
+    } catch (err) {
+      alert('Oops, could not copy. Please select manually.');
+    }
+
+    document.body.removeChild(textArea);
+  }
+}
+
+  </script>
+</body>
+</html>
